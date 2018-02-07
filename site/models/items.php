@@ -99,9 +99,10 @@ class TjucmModelItems extends JModelList
 
 			if (!empty($this->menuparams))
 			{
+				$this->ucm_type   = $this->menuparams->get('ucm_type');
+
 				if (!empty($this->ucm_type))
 				{
-					$this->ucm_type   = $this->menuparams->get('ucm_type');
 					$ucmType     = 'com_tjucm.' . $this->ucm_type;
 				}
 			}
@@ -140,6 +141,9 @@ class TjucmModelItems extends JModelList
 		// Create a new query object.
 		$db    = $this->getDbo();
 		$query = $db->getQuery(true);
+		$user = JFactory::getUser();
+		$ucmTypeId = $this->getState('ucmType.id');
+		$canViewOwn = $user->authorise('core.type.viewownitem', 'com_tjucm.type.' . $ucmTypeId);
 
 		$group_concat = 'GROUP_CONCAT(CONCAT_WS("' . $this->fields_separator . '", fields.id, fieldValue.value)';
 		$group_concat .= 'SEPARATOR "' . $this->records_separator . '") AS field_values';
@@ -147,7 +151,7 @@ class TjucmModelItems extends JModelList
 		// Select the required fields from the table.
 		$query->select(
 			$this->getState(
-				'list.select', 'DISTINCT a.id, a.state, ' . $group_concat
+				'list.select', 'DISTINCT a.id, a.state, a.created_date, ' . $group_concat
 			)
 		);
 
@@ -192,11 +196,18 @@ class TjucmModelItems extends JModelList
 			$query->where($db->quoteName('a.type_id') . "=" . (INT) $ucmType);
 		}
 
-		$createdBy = $this->getState('created_by', '', 'INT');
-
-		if (!empty($createdBy))
+		if ($canViewOwn)
 		{
-			$query->where($db->quoteName('a.created_by') . "=" . (INT) $createdBy);
+			$query->where('a.created_by = ' . (INT) $user->id);
+		}
+		else
+		{
+			$createdBy = $this->getState('created_by', '', 'INT');
+
+			if (!empty($createdBy))
+			{
+				$query->where($db->quoteName('a.created_by') . "=" . (INT) $createdBy);
+			}
 		}
 
 		$query->where('fields.showonlist =  1');
@@ -250,22 +261,21 @@ class TjucmModelItems extends JModelList
 	public function getFields()
 	{
 		JLoader::import('components.com_tjfields.models.fields', JPATH_ADMINISTRATOR);
-		$items_model = JModelLegacy::getInstance('Fields', 'TjfieldsModel');
-		$items_model->setState('filter.showonlist', 1);
+		$FieldsModel = JModelLegacy::getInstance('Fields', 'TjfieldsModel');
+		$FieldsModel->setState('filter.showonlist', 1);
 		$this->client = $this->getState('ucm.client');
 
 		if (!empty($this->client))
 		{
-			$items_model->setState('filter.client', $this->client);
+			$FieldsModel->setState('filter.client', $this->client);
 		}
 
-		$items = $items_model->getItems();
-
+		$Fields = $FieldsModel->getItems();
 		$data = array();
 
-		foreach ($items as $item)
+		foreach ($Fields as $Field)
 		{
-			$data[$item->id] = $item->label;
+			$data[$Field->id] = $Field->label;
 		}
 
 		return $data;
@@ -431,5 +441,31 @@ class TjucmModelItems extends JModelList
 		{
 			return false;
 		}
+	}
+
+	/**
+	 * Get Select list of all UCM types
+	 *
+	 * @return Jhtml
+	 */
+	public function getTypes()
+	{
+		// Include models
+		JModelLegacy::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_tjucm/models');
+		$typesModel = JModelLegacy::getInstance('Types', 'TjucmModel');
+
+		$typesModel->setState('filter.state');
+		$types = $typesModel->getItems();
+
+		$options = array();
+
+		$options[] = JHtml::_('select.option', '', JText::_('COM_UCM_FORM_LBL_FIELD_SELECT_TARGET_UCM_TYPE'));
+
+		foreach ($types as $type)
+		{
+			$options[] = JHtml::_('select.option', $type->unique_identifier, $type->title);
+		}
+
+		return JHtml::_('select.genericlist', $options, 'target_client', 'class="inputbox required"', 'value', 'text', $this->value);
 	}
 }

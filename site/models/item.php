@@ -62,10 +62,11 @@ class TjucmModelItem extends JModelAdmin
 
 		// Check published state
 		if ((!$user->authorise('core.type.edititem', 'com_tjucm.type.' . $ucmId))
+			&& (!$user->authorise('core.type.editownitem', 'com_tjucm.type.' . $ucmId))
 			&& (!$user->authorise('core.type.edititemstate', 'com_tjucm.type.' . $ucmId)))
 		{
 			$this->setState('filter.published', 1);
-			$this->setState('fileter.archived', 2);
+			$this->setState('filter.archived', 2);
 		}
 
 		// Load the parameters.
@@ -74,10 +75,7 @@ class TjucmModelItem extends JModelAdmin
 
 		if (isset($params_array['item_id']))
 		{
-			if ($params_array['item_id'])
-			{
-				$this->setState('item.id', $params_array['item_id']);
-			}
+			$this->setState('item.id', $params_array['item_id']);
 		}
 
 		$this->setState('params', $params);

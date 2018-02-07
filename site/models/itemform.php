@@ -72,12 +72,8 @@ class TjucmModelItemForm extends JModelForm
 		$app = JFactory::getApplication('com_tjucm');
 		$user = JFactory::getUser();
 
-		// Load state from the request userState on edit or from the passed variable on default
-		if (JFactory::getApplication()->input->get('layout') == 'edit')
-		{
-			// Load state from the request.
-			$id = $app->input->getInt('id');
-		}
+		// Load state from the request.
+		$id = $app->input->getInt('id');
 
 		if (!empty($id))
 		{
@@ -95,6 +91,7 @@ class TjucmModelItemForm extends JModelForm
 
 		// Check published state
 		if ((!$user->authorise('core.type.edititem', 'com_tjucm.type.' . $ucmId))
+			&& (!$user->authorise('core.type.editownitem', 'com_tjucm.type.' . $ucmId))
 			&& (!$user->authorise('core.type.edititemstate', 'com_tjucm.type.' . $ucmId)))
 		{
 			$this->setState('filter.published', 1);
@@ -105,7 +102,7 @@ class TjucmModelItemForm extends JModelForm
 		$params       = $app->getParams();
 		$params_array = $params->toArray();
 
-		if (isset($params_array['item_id']))
+		if (!empty($params_array['item_id']))
 		{
 			$this->setState('item.id', $params_array['item_id']);
 		}
@@ -189,6 +186,16 @@ class TjucmModelItemForm extends JModelForm
 					{
 						$this->item->params->set('access-view', true);
 					}
+				}
+
+				// Check if passing id ucm type is not equal to passing client ucm type then unable to view form
+				JModelLegacy::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_tjucm/models');
+				$tjUcmModelType = JModelLegacy::getInstance('Type', 'TjucmModel');
+				$tableUcmId = $tjUcmModelType->getTypeId($table->client);
+
+				if ($ucmTypeId !== $tableUcmId)
+				{
+					$this->item->params->set('access-view', false);
 				}
 			}
 		}
@@ -444,6 +451,10 @@ class TjucmModelItemForm extends JModelForm
 
 		if ($table->save($data) === true)
 		{
+			$dispatcher = JEventDispatcher::getInstance();
+			JPluginHelper::importPlugin('tjucm');
+			$dispatcher->trigger('onAfterUcmSave', array($table));
+
 			$id = (int) $this->getState($this->getName() . '.id');
 
 			if (!empty($extra_jform_data))

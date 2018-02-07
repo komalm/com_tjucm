@@ -11,6 +11,7 @@
 defined('_JEXEC') or die;
 
 jimport('joomla.application.component.view');
+JLoader::import('components.com_tjfields.helpers.tjucm', JPATH_SITE);
 
 /**
  * View class for a list of Tjucm.
@@ -26,6 +27,8 @@ class TjucmViewItems extends JViewLegacy
 	protected $state;
 
 	protected $params;
+
+	protected $types;
 
 	/**
 	 * Display the view
@@ -45,6 +48,7 @@ class TjucmViewItems extends JViewLegacy
 		$this->pagination = $this->get('Pagination');
 		$this->params     = $app->getParams('com_tjucm');
 		$this->listcolumn = $this->get('Fields');
+		$this->types = $this->get('Types');
 		$this->allowedToAdd = false;
 
 		$model = $this->getModel("Items");
@@ -53,6 +57,7 @@ class TjucmViewItems extends JViewLegacy
 
 		$user = JFactory::getUser();
 		$canCreate = $user->authorise('core.type.createitem', 'com_tjucm.type.' . $this->ucmTypeId);
+		$viewownitem = $user->authorise('core.type.viewownitem', 'com_tjucm.type.' . $this->ucmTypeId);
 		$canView = $user->authorise('core.type.viewitem', 'com_tjucm.type.' . $this->ucmTypeId);
 
 		// If did not get the client from url then get if from menu param
@@ -102,7 +107,7 @@ class TjucmViewItems extends JViewLegacy
 			}
 		}
 
-		if ($this->created_by == $userId)
+		if (($this->created_by == $userId) || $viewownitem)
 		{
 			$canView = true;
 		}

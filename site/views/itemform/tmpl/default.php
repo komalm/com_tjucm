@@ -61,7 +61,7 @@ $setnavigation             = false;
 		}
 	}
 </script>
-
+<div class="tjucm-itemform">
 <form action="<?php echo JRoute::_('index.php'); ?>" method="post" enctype="multipart/form-data" name="adminForm" id="item-form" class="form-validate">
 	<?php
 	if ($is_saved)
@@ -160,3 +160,4 @@ $setnavigation             = false;
 		<?php echo JHtml::_('form.token'); ?>
 	</div>
 </form>
+</div>

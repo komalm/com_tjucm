@@ -18,6 +18,7 @@
                 label="COM_TJUCM_ITEM_ID_SELECT_LABEL_FORM"
                 require="true"
                 description="JGLOBAL_SHOW_TITLE_DESC">
+                <option value=""></option>
             </field>
         </fieldset>
     </fields>
